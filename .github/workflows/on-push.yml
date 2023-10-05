@@ -1,0 +1,300 @@
+name: 'On push changes'
+
+on:
+  workflow_call:
+    inputs:
+      go_version:
+        required: false
+        type: string
+        default: '1.21'
+        description: "Version of Go which should be used to perform the checks"
+
+    secrets:
+      deploy_key:
+        required: true
+        description: 'Create a Deploy Key and pass a private key here, so the push of the tag will trigger the builds, based on it.'
+
+      codecov_token:
+        required: false
+        description: 'Provide a codecov.io token, if you want to pass a coverage report to it.'
+
+      slack_webhook_url:
+        required: false
+        description: 'Provide a Slack incoming webhook url, if you want to have a notification on the slack channel'
+
+env:
+  BUILD_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+permissions:
+  contents: write
+
+jobs:
+  code-style:
+    name: Code Style
+    runs-on: ubuntu-latest
+    outputs:
+      updatedCode: ${{ steps.commit.outputs.pushed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.deploy_key }}
+
+      ################################################
+      # Prepare programming language environment
+      ################################################
+      - uses: actions/setup-go@v4
+        with:
+          go-version: ${{inputs.go_version}}
+
+      ############################################################
+      # generate - run generation of go files if needed
+      ############################################################
+
+      # TODO: choose a common way to do that
+
+      ############
+      # go mod
+      ############
+      - name: Go Module tidy
+        run: go mod tidy
+
+      ############
+      # YAML lint
+      ############
+      - name: Run yaml linter
+        id: yaml-lint
+        uses: ibiqlik/action-yamllint@v3.1
+        with:
+          config_data: |
+            extends: default
+            ignore:
+              - swagger.yaml
+              - .golangci.yml
+            rules:
+              truthy:
+                check-keys: false
+              document-start:
+                present: false
+                level: warning
+              line-length:
+                max: 120
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: yamllint-logfile
+          path: ${{ steps.yaml-lint.outputs.logfile }}
+
+      - name: clean yaml-lint log
+        if: always()
+        run: rm ${{ steps.yaml-lint.outputs.logfile }}
+
+
+      ############################################################
+      # linelint - add new lines at the end of files if needed
+      ############################################################
+
+      # TODO: run a command to do so,
+      # TODO: or adjust (modify) linelint action for that, so it won't need config file
+
+      ########################
+      # lint & fix code style
+      ########################
+
+      # TODO: split golangci-lint configurations for code style and errors
+      # consider unexcluding config files in a yaml lint step (above)
+
+      ###################
+      # Push changes
+      ###################
+      - name: "Commit & Push"
+        id: commit
+        if: always()
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "chore: update generated files"
+          default_author: github_actions
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: [code-style]
+    if: ${{ !cancelled() && needs.code-style.outputs.updatedCode != 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: ${{inputs.go_version}}
+          cache: false
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          skip-cache: false
+          skip-pkg-cache: false
+          skip-build-cache: false
+
+  compile:
+    name: Compile
+    runs-on: ubuntu-latest
+    needs: [code-style]
+    if: ${{ !cancelled() && needs.code-style.outputs.updatedCode != 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: ${{inputs.go_version}}
+      - name: Go Build
+        run: go build -v ./...
+
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    outputs:
+      id: ${{ github.job }}
+    needs: [code-style]
+    if: ${{ !cancelled() && needs.code-style.outputs.updatedCode != 'true' }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: ${{inputs.go_version}}
+
+      # Install gotestfmt on the VM running the action.
+      - name: Set up gotestfmt
+        uses: GoTestTools/gotestfmt-action@v2
+
+      # Run tests with nice formatting. Save the original log in /tmp/gotest.log
+      - name: Run tests
+        run: |
+          set -euo pipefail
+          go test -json -coverprofile=coverage.txt -covermode=atomic -v ./... 2>&1 | tee gotest.log | gotestfmt
+
+      # Upload the original go test log as an artifact for later review.
+      - name: Upload test & coverage reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-report
+          path: |
+            gotest.log
+            coverage.txt
+          if-no-files-found: error
+
+      - name: Update code coverage
+        if: ${{ env.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@v3.1.4
+        with:
+          token: ${{ env.CODECOV_TOKEN }}
+          flags: unittests
+          fail_ci_if_error: false
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.codecov_token }}
+
+  notify:
+    name: "Notify"
+    runs-on: ubuntu-latest
+    needs: [code-style, lint, compile, test]
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      REPO_URL: ${{github.server_url}}/${{ github.repository }}
+    if: ${{ !cancelled() && needs.code-style.outputs.updatedCode != 'true' }}
+    steps:
+      - name: "Slack notification is skipped because secret SLACK_WEBHOOK_URL is not set"
+        if: ${{ env.SLACK_WEBHOOK_URL == '' }}
+        run: echo "::notice::Slack notification is skipped because secret SLACK_WEBHOOK_URL is not set"
+
+      - uses: actions/checkout@v3
+      - name: Matching PR
+        id: matching-pr
+        run: |
+          GH_PAGER=cat gh pr list -H ${{ github.ref_name }} --json url,number,title \
+          -q '.[0] | @text "msg=<\(.url//"${{ env.REPO_URL }}/pulls")|\(.title//"Not Found, check the list here.")>"' \
+          >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - uses: actions/github-script@v6
+        id: failed-checks
+        if: ${{ contains(needs.*.result, 'failure') && env.SLACK_WEBHOOK_URL != '' }}
+        with:
+          script: |
+            const needs = ${{ toJSON(needs) }}
+            return Object.entries(needs)
+                  .filter(([_,v]) => v.result === 'failure')
+                  .map(([key]) => '`' + key + '`')
+                  .join(', ')
+          result-encoding: string
+
+      - name: "Notify success"
+        if: ${{ steps.failed-checks.outputs.result == '' && env.SLACK_WEBHOOK_URL != '' }}
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "attachments": [
+                {
+                  "fallback": "${{ github.repository }} Checks Passed!",
+                  "color": "good",
+                  "title": "Checks Passed!",
+                  "title_link": "${{ env.BUILD_URL }}",
+                  "text": "All checks has succeed!",
+                  "fields": [
+                    {
+                      "title": "Project",
+                      "value": "<${{ env.REPO_URL }}|${{ github.repository }}>",
+                      "short": true
+                    },
+                    {
+                      "title": "Branch",
+                      "value": "${{ github.ref_name }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Pull Request",
+                      "value": "${{ steps.matching-pr.outputs.msg }}",
+                      "short": false
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: "Notify failure"
+        if: ${{ steps.failed-checks.outputs.result != '' && env.SLACK_WEBHOOK_URL != '' }}
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "attachments": [
+                {
+                  "fallback": "${{ github.repository }} Checks Failed!",
+                  "color": "danger",
+                  "title": "Checks Failed!",
+                  "title_link": "${{ env.BUILD_URL }}",
+                  "text": "Checks ${{steps.failed-checks.outputs.result}} failed!",
+                  "fields": [
+                    {
+                      "title": "Project",
+                      "value": "<${{ env.REPO_URL }}|${{ github.repository }}>",
+                      "short": true
+                    },
+                    {
+                      "title": "Branch",
+                      "value": "${{ github.ref_name }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Pull Request",
+                      "value": "${{ steps.matching-pr.outputs.msg }}",
+                      "short": false
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

@@ -34,6 +34,7 @@ jobs:
           skip-commit: 'true'
 
       - name: Prepare draft of release
+        if: steps.tag-changelog.outputs.skipped != 'true'
         run: |
           gh release create ${{ steps.tag-changelog.outputs.tag }} --draft -n "${{ steps.tag-changelog.outputs.clean_changelog }}" -t "Release ${{ steps.tag-changelog.outputs.tag }}"
         env:

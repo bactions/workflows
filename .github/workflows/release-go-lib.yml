@@ -1,0 +1,78 @@
+name: 'Release Go library'
+permissions:
+  contents: write
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+        description: "Version of the app to release"
+
+    secrets:
+      SLACK_WEBHOOK_URL:
+        required: false
+        description: 'Provide a Slack incoming webhook url, if you want to have a notification on the slack channel'
+
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      REPO_URL: ${{github.server_url}}/${{ github.repository }}
+      RELEASE_URL: ${{github.server_url}}/${{ github.repository }}/releases/tag/${{ inputs.version }}
+    steps:
+      - name: "Create release if there isn't"
+        run: |
+          GH_PAGER=cat gh release view ${{ inputs.version }} --json name \
+          || gh release create ${{ inputs.version }} -t "Release ${{ inputs.version }}" --draft --repo ${{ github.repository }}
+
+      - name: Publish
+        run: |
+          gh release edit ${{ inputs.version }} --draft=false --repo ${{ github.repository }}
+
+      - name: Install cURL
+        run: sudo apt-get install curl -y
+      - name: Syndicate to GoDocs
+        run: |
+          echo "syndicating to GoDocs..."
+          curl "https://proxy.golang.org/github.com/${{ github.repository }}/@v/${{ inputs.version }}.info"
+
+      - name: "Notify successful release"
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "block_id": "release",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*${{ github.event.repository.name || github.repository }}* <${{ env.RELEASE_URL }}|${{ inputs.version }}> is out! :rocket:"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "image",
+                      "image_url": "https://go.dev/favicon.ico",
+                      "alt_text": "Go"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "Go package documentation for <https://pkg.go.dev/github.com/${{ github.repository }}|${{ github.event.repository.name || github.repository }}> was updated!"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

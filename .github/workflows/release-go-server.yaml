@@ -317,6 +317,7 @@ jobs:
         run: echo "::notice::Slack notification is skipped because secret SLACK_WEBHOOK_URL is not set"
 
       - name: "Resolve docker outputs"
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
         run: |
           echo "DOCKER_IMAGE=${{ needs.dockerize.outputs.image }}" >> $GITHUB_ENV
           echo "DOCKER_IMAGE_HTML=${{ needs.dockerize.outputs.html }}" >> $GITHUB_ENV
@@ -327,7 +328,7 @@ jobs:
       - name: Resolve docker configuration
         id: resolve-docker
         uses: actions/github-script@v6
-        if: env.DOCKER_IMAGE == '' || env.DOCKER_IMAGE_HTML == ''
+        if: env.SLACK_WEBHOOK_URL != '' && (env.DOCKER_IMAGE == '' || env.DOCKER_IMAGE_HTML == '')
         with:
           script: |
             let image = '${{ inputs.docker_image }}'
@@ -368,7 +369,7 @@ jobs:
             }
 
       - name: "Set missing docker image and image html"
-        if: env.DOCKER_IMAGE == '' || env.DOCKER_IMAGE_HTML == ''
+        if: env.SLACK_WEBHOOK_URL != '' && (env.DOCKER_IMAGE == '' || env.DOCKER_IMAGE_HTML == '')
         run: |
           echo "DOCKER_IMAGE=${{ fromJSON(steps.resolve-docker.outputs.result).image }}" >> $GITHUB_ENV
           echo "DOCKER_IMAGE_HTML=${{ fromJSON(steps.resolve-docker.outputs.result).dockerImageHtml }}" >> $GITHUB_ENV

@@ -385,7 +385,7 @@ jobs:
                   "block_id": "release",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*bux-cli* <${{ env.RELEASE_URL }}|${{ inputs.version }}> is out! :rocket:"
+                    "text": "*${{ github.event.repository.name || github.repository }}* <${{ env.RELEASE_URL }}|${{ inputs.version }}> is out! :rocket:"
                   }
                 },
                 {

@@ -316,11 +316,56 @@ jobs:
           echo "DOCKER_IMAGE_HTML=${{ needs.dockerize.outputs.html }}" >> $GITHUB_ENV
           echo "DOCKER_IMAGE_VERSION=${{ needs.dockerize.outputs.version }}" >> $GITHUB_ENV
 
-      - name: "Decode docker outputs"
+      # Sometime GH can treat image name and image url as containing secrets,
+      # therefore if they're missing we need to resolve them again
+      - name: Resolve docker configuration
+        id: resolve-docker
+        uses: actions/github-script@v6
+        if: env.DOCKER_IMAGE == '' || env.DOCKER_IMAGE_HTML == ''
+        with:
+          script: |
+            let image = '${{ inputs.docker_image }}'
+            let registry
+            let organisation
+            let imageName
+            if(image) {
+                const parts = image.split('/')
+                registry = parts.length === 3 ? parts[0] : 'dockerhub'
+                organisation = parts.length === 3 ? parts[1] : parts[0]
+                imageName = parts.length === 3 ? parts[2] : parts[1]
+            } else {
+                registry = "${{ inputs.docker_registry || 'dockerhub' }}"
+                organisation = '${{ inputs.docker_org || vars.DOCKER_ORG || secrets.DOCKER_USERNAME || github.repository_owner }}'
+                imageName = '${{ inputs.docker_image_name || vars.DOCKER_IMAGE_NAME || github.event.repository.name }}'
+                image = `${registry !== 'dockerhub' ? registry + '/' : ''}${organisation}/${imageName}`
+            }
+            const isDockerhub = registry === 'dockerhub'
+            const isGhcr = registry === 'ghcr.io'
+            const username = '${{ secrets.DOCKER_USERNAME || github.repository_owner }}'
+            const password = '${{ secrets.DOCKER_PASSWORD }}'
+            const ghToken = '${{ github.token }}'
+            let dockerImageHtml=''
+            if(isDockerhub) {
+                dockerImageHtml = `https://hub.docker.com/r/${image}`
+            } else if(isGhcr) {
+                dockerImageHtml = `https://github.com/${organisation}/${imageName}/pkgs/container/${imageName}`
+            }   
+            
+            return {
+                image: image,
+                username: username,
+                password: password ? password : isGhcr ? ghToken : '',
+                registry: isDockerhub ? '' : registry,
+                isDockerhub,
+                isGhcr,
+                dockerImageHtml
+            }
+
+      - name: "Set missing docker image and image html"
         if: env.DOCKER_IMAGE == '' || env.DOCKER_IMAGE_HTML == ''
         run: |
-          echo "DOCKER_IMAGE=$(echo ${{ needs.dockerize.outputs.image_encoded }} | base64 -di | base64 -di)" >> $GITHUB_ENV
-          echo "DOCKER_IMAGE_HTML=$(echo ${{ needs.dockerize.outputs.html_encoded }} | base64 -di | base64 -di)" >> $GITHUB_ENV
+          echo "DOCKER_IMAGE=${{ fromJSON(steps.resolve-docker.outputs.result).image }}" >> $GITHUB_ENV
+          echo "DOCKER_IMAGE_HTML=${{ fromJSON(steps.resolve-docker.outputs.result).dockerImageHtml }}" >> $GITHUB_ENV
 
       - name: "Notify successful release"
         if: ${{ env.SLACK_WEBHOOK_URL != '' }}

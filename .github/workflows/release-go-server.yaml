@@ -69,6 +69,12 @@ on:
         description: |
           Password used to authenticate in docker repository.
           If is not set, and registry is ghcr.io, then defaults to GitHub Token.
+          
+      SLACK_WEBHOOK_URL:
+        required: false
+        description: 'Provide a Slack incoming webhook url, if you want to have a notification on the slack channel'
+
+
 env:
   OS_MAPPING: | 
     {

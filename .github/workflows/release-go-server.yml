@@ -20,6 +20,11 @@ on:
         type: string
         default: '1.21'
         description: "Version of Go which should be used to perform the checks"
+      go_main_file:
+        required: false
+        type: string
+        default: 'cmd/main.go'
+        description: "Location of the main.go"
       cgo_enabled:
         required: false
         type: boolean
@@ -82,6 +87,7 @@ env:
       'linux': 'ubuntu-latest'
     }
   GH_TOKEN: ${{ github.token }}
+  MAIN_FILE: ${{ inputs.go_main_file }}
 
 jobs:
   resolve-config:

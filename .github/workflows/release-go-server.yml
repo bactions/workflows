@@ -132,7 +132,6 @@ jobs:
         with:
           go_version: ${{ inputs.go_version }}
       - name: "Create release if there isn't"
-        if: inputs.release_binaries
         run: |
           GH_PAGER=cat gh release view ${{ inputs.version }} --json name \
           || gh release create ${{ inputs.version }} -t "Release ${{ inputs.version }}" --latest --draft -F dist/CHANGELOG.md 

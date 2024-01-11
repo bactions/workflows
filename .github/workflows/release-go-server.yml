@@ -141,8 +141,8 @@ jobs:
         if: inputs.release_binaries
         run: |
           gh release upload ${{ inputs.version }} \
-          dist/${{ github.event.repository.name }}*.tar.gz \
-          dist/${{ github.event.repository.name }}*_checksums.txt \
+          dist/*.tar.gz \
+          dist/*_checksums.txt \
           --clobber
 
   dockerize:

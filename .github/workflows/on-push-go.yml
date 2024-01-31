@@ -47,7 +47,7 @@ jobs:
       ################################################
       # Prepare programming language environment
       ################################################
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{inputs.go-version}}
           go-version-file: ${{inputs.go-version-file}}

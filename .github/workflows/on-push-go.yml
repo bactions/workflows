@@ -3,11 +3,16 @@ name: 'On push changes'
 on:
   workflow_call:
     inputs:
-      go_version:
+      go-version:
         required: false
         type: string
-        default: '1.21'
-        description: "Version of Go which should be used to perform the checks"
+        description: "Version of Go which should be used to perform the checks. Takes precedence over go-version-file."
+
+      go-version-file:
+        required: false
+        type: string
+        default: 'go.mod'
+        description: "Accepts a path to a go.mod file or a go.work file that contains the version of Go. Default: 'go.mod'"
 
     secrets:
       deploy_key:
@@ -44,7 +49,8 @@ jobs:
       ################################################
       - uses: actions/setup-go@v4
         with:
-          go-version: ${{inputs.go_version}}
+          go-version: ${{inputs.go-version}}
+          go-version-file: ${{inputs.go-version-file}}
 
       ############################################################
       # generate - run generation of go files if needed
@@ -121,9 +127,10 @@ jobs:
     if: ${{ !cancelled() && needs.code-style.outputs.updatedCode != 'true' }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ${{inputs.go_version}}
+          go-version: ${{inputs.go-version}}
+          go-version-file: ${{inputs.go-version-file}}
           cache: false
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
@@ -140,9 +147,10 @@ jobs:
     if: ${{ !cancelled() && needs.code-style.outputs.updatedCode != 'true' }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ${{inputs.go_version}}
+          go-version: ${{inputs.go-version}}
+          go-version-file: ${{inputs.go-version-file}}
       - name: Go Build
         run: go build -v ./...
 
@@ -155,10 +163,11 @@ jobs:
     needs: [code-style]
     if: ${{ !cancelled() && needs.code-style.outputs.updatedCode != 'true' }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ${{inputs.go_version}}
+          go-version: ${{inputs.go-version}}
+          go-version-file: ${{inputs.go-version-file}}
 
       # Install gotestfmt on the VM running the action.
       - name: Set up gotestfmt
@@ -205,7 +214,7 @@ jobs:
         if: ${{ env.SLACK_WEBHOOK_URL == '' }}
         run: echo "::notice::Slack notification is skipped because secret SLACK_WEBHOOK_URL is not set"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Matching PR
         id: matching-pr
         run: |

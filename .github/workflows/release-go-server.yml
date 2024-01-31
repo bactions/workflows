@@ -289,7 +289,7 @@ jobs:
           envsubst < $DOCKER_README_FILE > ./dist/README.DOCKER.md
 
       - name: Docker Hub Description
-        uses: peter-evans/dockerhub-description@v3
+        uses: peter-evans/dockerhub-description@v4
         if: success() && env.DOCKER_README_FILE != ''
         with:
           username: ${{ fromJSON(steps.resolve-docker.outputs.result).username }}

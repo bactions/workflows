@@ -162,7 +162,7 @@ jobs:
           mkdir -p dist/linux/amd64
           mkdir -p dist/linux/arm64
       - name: Download
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: bin-linux
           path: dist/bin

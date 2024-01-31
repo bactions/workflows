@@ -264,6 +264,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             project_name=${{ github.event.repository.name }}
+            repository_owner=${{ github.repository_owner }}
             tag=${{ github.ref_name }}
             src_url=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.source'] }}
             version=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}

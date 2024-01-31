@@ -381,7 +381,7 @@ jobs:
 
       - name: "Notify successful release"
         if: ${{ env.SLACK_WEBHOOK_URL != '' }}
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@v1.25.0
         with:
           payload: |
             {

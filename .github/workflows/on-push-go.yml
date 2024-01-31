@@ -84,7 +84,7 @@ jobs:
                 level: warning
               line-length:
                 max: 120
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: yamllint-logfile
@@ -181,7 +181,7 @@ jobs:
 
       # Upload the original go test log as an artifact for later review.
       - name: Upload test & coverage reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-report

@@ -15,11 +15,15 @@ on:
         default: 'linux,darwin'
         required: false
         type: string
-      go_version:
+      go-version:
         required: false
         type: string
-        default: '1.21'
-        description: "Version of Go which should be used to perform the checks"
+        description: "Version of Go which should be used to perform the checks. Takes precedence over go-version-file."
+      go-version-file:
+        required: false
+        type: string
+        default: 'go.mod'
+        description: "Accepts a path to a go.mod file or a go.work file that contains the version of Go. Default: 'go.mod'"
       go_main_file:
         required: false
         type: string
@@ -130,7 +134,8 @@ jobs:
       - name: Build
         uses: bactions/build-go@v0
         with:
-          go_version: ${{ inputs.go_version }}
+          go-version: ${{ inputs.go-version }}
+          go-version-file: ${{ inputs.go-version-file }}
       - name: "Create release if there isn't"
         run: |
           GH_PAGER=cat gh release view ${{ inputs.version }} --json name \

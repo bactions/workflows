@@ -14,10 +14,17 @@ on:
 jobs:
   manual-test:
     name: "Enforce manual tests"
-    if: inputs.require-manual-tests && contains(fromJSON('["labeled", "unlabeled"]'), github.event.action)
+    if: inputs.require-manual-tests && contains(fromJSON('["labeled", "unlabeled", "opened"]'), github.event.action)
     continue-on-error: true
     runs-on: ubuntu-latest
     steps:
+      - name: "Manual tests reminder"
+        if: github.event.action == 'opened'
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} -R $GITHUB_REPOSITORY \
+          -b "Remember to ask team members to perform manual tests and assign `tested` label."
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: "Fail if tested label is not assigned"
         if: contains(github.event.pull_request.labels.*.name, 'tested') != true
         run: |

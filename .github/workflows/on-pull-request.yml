@@ -24,13 +24,10 @@ jobs:
           echo "::error title=Waiting for manual tests to be performed.::Waiting for manual tests to be performed. Please add 'tested' label after testing."
           exit 1
       - name: "Fail if author assigned label tested"
-        if: github.event.action == 'labeled' && github.event.label.name == 'tested'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { payload } = context;
-            const author = payload.pull_request.user.login;
-            const labeler = payload.sender.login;
-            if(author === labeler) {
-              core.setFailed("Manual tests should be performed by someone other than the PR author.");
-            }    
+        if: | 
+         github.event.action == 'labeled' 
+          && github.event.label.name == 'tested'
+          && github.event.pull_request.user.login == github.event.sender.login
+        run: |
+          echo "::error title=Author manual tests.::Manual tests should be performed by someone other than the PR author."
+          exit 1

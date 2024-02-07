@@ -1,0 +1,36 @@
+name: 'On pull request'
+
+on:
+  workflow_call:
+    inputs:
+      require-manual-tests:
+        required: false
+        type: boolean
+        default: true
+        description: |
+          Requires a team member of author to assign a 'tested' label to a PR, 
+          confirming that the manual tests were performed and passed.
+
+jobs:
+  manual-test:
+    name: "Enforce manual tests"
+    if: inputs.require-manual-tests && contains(fromJSON('["labeled", "unlabeled"]'), github.event.action)
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Fail if tested label is not assigned"
+        if: contains(github.event.pull_request.labels.*.name, 'tested') != true
+        run: |
+          echo "::error title=Waiting for manual tests to be performed.::Waiting for manual tests to be performed. Please add 'tested' label after testing."
+          exit 1
+      - name: "Fail if author assigned label tested"
+        if: github.event.action == 'labeled' && github.event.label.name == 'tested'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { payload } = context;
+            const author = payload.pull_request.user.login;
+            const labeler = payload.sender.login;
+            if(author === labeler) {
+              core.setFailed("Manual tests should be performed by someone other than the PR author.");
+            }    

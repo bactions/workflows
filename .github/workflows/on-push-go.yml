@@ -154,7 +154,6 @@ jobs:
       - name: Go Build
         run: go build -v ./...
 
-
   test:
     name: Test
     runs-on: ubuntu-latest

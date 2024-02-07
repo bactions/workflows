@@ -26,20 +26,26 @@ jobs:
           gh pr comment ${{ github.event.pull_request.number }} -R $GITHUB_REPOSITORY \
           -b '### Manual Tests
 
-          :information_source: Remember to ask team members to perform manual tests and assign `tested` label.'
+          :information_source: Remember to ask team members to perform manual tests and to assign `tested` label after testing.'
           
           echo "::error title=Waiting for manual tests to be performed.::Waiting for manual tests to be performed. Please add 'tested' label after testing."
           exit 1
       - name: "Fail if tested label is not assigned"
         if: contains(github.event.pull_request.labels.*.name, 'tested') != true
         run: |
+          gh pr comment ${{ github.event.pull_request.number }} -R $GITHUB_REPOSITORY \
+          --edit-last \
+          -b '### Manual Tests
+
+          :information_source: Remember to ask team members to perform manual tests and to assign `tested` label after testing.'
+          
           echo "::error title=Waiting for manual tests to be performed.::Waiting for manual tests to be performed. Please add 'tested' label after testing."
           exit 1
       - name: "Fail if author assigned label tested"
         if: | 
          github.event.action == 'labeled' 
           && github.event.label.name == 'tested'
-          && github.event.pull_request.user.login == github.event.sender.login
+          && github.event.pull_request.user.login != github.event.sender.login
         run: |
           echo "::error title=Author manual tests.::Manual tests should be performed by someone other than the PR author."
           exit 1
@@ -48,6 +54,6 @@ jobs:
         run: |
           gh pr comment ${{ github.event.pull_request.number }} -R $GITHUB_REPOSITORY \
           --edit-last \
-          -b '### ### Manual Tests
+          -b '### Manual Tests
 
           :green_heart: Manual testing by @${{ github.event.pull_request.user.login }} resulted in success.'

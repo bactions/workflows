@@ -25,7 +25,6 @@ jobs:
         run: |
           gh pr comment ${{ github.event.pull_request.number }} -R $GITHUB_REPOSITORY \
           -b '### Manual Tests
-
           :information_source: Remember to ask team members to perform manual tests and to assign `tested` label after testing.'
           
           echo "::error title=Waiting for manual tests to be performed.::Waiting for manual tests to be performed. Please add 'tested' label after testing."
@@ -36,19 +35,34 @@ jobs:
           gh pr comment ${{ github.event.pull_request.number }} -R $GITHUB_REPOSITORY \
           --edit-last \
           -b '### Manual Tests
-
           :information_source: Remember to ask team members to perform manual tests and to assign `tested` label after testing.'
           
           echo "::error title=Waiting for manual tests to be performed.::Waiting for manual tests to be performed. Please add 'tested' label after testing."
           exit 1
+
+      - name: "Set author_manual_test value"
+        if: |
+          github.event.action == 'labeled' 
+           && github.event.label.name == 'tested'
+           && github.event.pull_request.user.login == github.event.sender.login
+        run: |
+          echo "author_manual_test=true" >> $GITHUB_ENV
+
+      - name: "Comment if author assigned label tested"
+        if: env.author_manual_test
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} -R $GITHUB_REPOSITORY \
+          --edit-last \
+          -b '### Manual Tests
+          :red_circle: Manual testing should not be performed by author.
+          Ask other team member to perform a manual tests and to assign `tested` label after testing.'
+
       - name: "Fail if author assigned label tested"
-        if: | 
-         github.event.action == 'labeled' 
-          && github.event.label.name == 'tested'
-          && github.event.pull_request.user.login != github.event.sender.login
+        if: env.author_manual_test
         run: |
           echo "::error title=Author manual tests.::Manual tests should be performed by someone other than the PR author."
           exit 1
+
       - name: "Add comment that tests were preformed"
         if: github.event.action == 'labeled' && github.event.label.name == 'tested'
         run: |

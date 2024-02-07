@@ -22,7 +22,12 @@ jobs:
         if: github.event.action == 'opened'
         run: |
           gh pr comment ${{ github.event.pull_request.number }} -R $GITHUB_REPOSITORY \
-          -b "Remember to ask team members to perform manual tests and assign `tested` label."
+          -b '### Manual Tests
+
+          :information_source: Remember to ask team members to perform manual tests and assign `tested` label.'
+          
+          echo "::error title=Waiting for manual tests to be performed.::Waiting for manual tests to be performed. Please add 'tested' label after testing."
+          exit 1
         env:
           GH_TOKEN: ${{ github.token }}
       - name: "Fail if tested label is not assigned"

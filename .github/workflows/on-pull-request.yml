@@ -17,6 +17,8 @@ jobs:
     if: inputs.require-manual-tests && contains(fromJSON('["labeled", "unlabeled", "opened"]'), github.event.action)
     continue-on-error: true
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: "Manual tests reminder"
         if: github.event.action == 'opened'
@@ -28,8 +30,6 @@ jobs:
           
           echo "::error title=Waiting for manual tests to be performed.::Waiting for manual tests to be performed. Please add 'tested' label after testing."
           exit 1
-        env:
-          GH_TOKEN: ${{ github.token }}
       - name: "Fail if tested label is not assigned"
         if: contains(github.event.pull_request.labels.*.name, 'tested') != true
         run: |
@@ -43,3 +43,11 @@ jobs:
         run: |
           echo "::error title=Author manual tests.::Manual tests should be performed by someone other than the PR author."
           exit 1
+      - name: "Add comment that tests were preformed"
+        if: github.event.action == 'labeled' && github.event.label.name == 'tested'
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} -R $GITHUB_REPOSITORY \
+          --edit-last \
+          -b '### ### Manual Tests
+
+          :green_heart: Manual testing by @${{ github.event.pull_request.user.login }} resulted in success.'

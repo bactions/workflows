@@ -57,6 +57,12 @@ jobs:
           :red_circle: Manual testing should not be performed by author.
           Ask other team member to perform a manual tests and to assign `tested` label after testing.'
 
+      - name: "Remove tested label if author assigned it"
+        if: env.author_manual_test
+        run: |
+          gh pr edit ${{ github.event.pull_request.number }} -R $GITHUB_REPOSITORY \
+          --remove-label tested
+
       - name: "Fail if author assigned label tested"
         if: env.author_manual_test
         run: |

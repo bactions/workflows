@@ -76,4 +76,4 @@ jobs:
           --edit-last \
           -b '### Manual Tests
 
-          :green_heart: Manual testing by @${{ github.event.pull_request.user.login }} resulted in success.'
+          :green_heart: Manual testing by @${{ github.event.sender.login }} resulted in success.'

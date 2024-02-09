@@ -11,31 +11,71 @@ on:
           Requires a team member of author to assign a 'tested' label to a PR, 
           confirming that the manual tests were performed and passed.
 
+env:
+  GH_TOKEN: ${{ github.token }}
+  PR_NUMBER: ${{ github.event.pull_request.number }}
+
 jobs:
+#  additional:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: "Put some comment"
+#        run: |
+#          gh pr comment $PR_NUMBER -R $GITHUB_REPOSITORY \
+#          -b "Welcome"
   manual-test:
+#    needs: [additional]
     name: "Manual tests"
     if: inputs.require-manual-tests && contains(fromJSON('["labeled", "unlabeled", "opened"]'), github.event.action)
     continue-on-error: true
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ github.token }}
+      message_header: '### Manual Tests'
     steps:
       - name: "Manual tests reminder"
         if: github.event.action == 'opened'
         run: |
-          gh pr comment ${{ github.event.pull_request.number }} -R $GITHUB_REPOSITORY \
-          -b '### Manual Tests
-          :information_source: Remember to ask team members to perform manual tests and to assign `tested` label after testing.'
+          message=':information_source: Remember to ask team members to perform manual tests and to assign `tested` label after testing.'
+          
+          gh pr comment $PR_NUMBER -R $GITHUB_REPOSITORY \
+          -b "$message_header
+          $message"
           
           echo "::error title=Waiting for manual tests to be performed.::Waiting for manual tests to be performed. Please add 'tested' label after testing."
           exit 1
+
+      - name: "Init state"
+        run: |
+          comment_author="github-actions"
+          has_last_comment_query=".comments | map(select(.author.login == \"$comment_author\")) | sort_by(.createdAt) | .[-1:]  | any(.body | startswith(\"$message_header\"))"
+          has_last_comment=$(gh pr view $PR_NUMBER -R $GITHUB_REPOSITORY -c --json comments --jq "$has_last_comment_query")
+          last_comment_id_query=".comments | map(select(.author.login == \"$comment_author\" and (.body | startswith(\"$message_header\")))) | .[-1].id"
+          last_comment_id=$(gh pr view $PR_NUMBER -R $GITHUB_REPOSITORY -c --json comments --jq "$last_comment_id_query")
+          if [[ $has_last_comment == "false" &&  $last_comment_id == "" ]]; then
+            update_comment_command="gh pr comment $PR_NUMBER -R $GITHUB_REPOSITORY -b"
+          elif [[ $has_last_comment == "false" &&  $last_comment_id != "" ]]; then
+            #Currently there is no option to update comment by id in gh cli for we're adding a new comment
+            update_comment_command="gh pr comment $PR_NUMBER -R $GITHUB_REPOSITORY -b"
+          else
+            update_comment_command="gh pr comment $PR_NUMBER -R $GITHUB_REPOSITORY --edit-last -b"
+          fi
+          
+          if [[ $RUNNER_DEBUG != "" ]]; then
+            echo "Command used for updating comments"
+            echo "$update_comment_command"
+          fi
+          
+          echo "has_last_comment=\"$has_last_comment\"" >> $GITHUB_EN
+          echo "last_comment_id=\"$last_comment_id\"" >> $GITHUB_EN
+          echo "update_comment_command=\"$update_comment_command\"" >> $GITHUB_EN
+
       - name: "Fail if tested label is not assigned"
         if: contains(github.event.pull_request.labels.*.name, 'tested') != true
         run: |
-          gh pr comment ${{ github.event.pull_request.number }} -R $GITHUB_REPOSITORY \
-          --edit-last \
-          -b '### Manual Tests
-          :information_source: Remember to ask team members to perform manual tests and to assign `tested` label after testing.'
+          message=':information_source: Remember to ask team members to perform manual tests and to assign `tested` label after testing.'
+          
+          eval $update_comment_command"'""$message_header
+          $message""'"
           
           echo "::error title=Waiting for manual tests to be performed.::Waiting for manual tests to be performed. Please add 'tested' label after testing."
           exit 1
@@ -51,11 +91,11 @@ jobs:
       - name: "Comment if author assigned label tested"
         if: env.author_manual_test
         run: |
-          gh pr comment ${{ github.event.pull_request.number }} -R $GITHUB_REPOSITORY \
-          --edit-last \
-          -b '### Manual Tests
-          :red_circle: Manual testing should not be performed by author.
+          message=':red_circle: Manual testing should not be performed by author.
           Ask other team member to perform a manual tests and to assign `tested` label after testing.'
+          
+          eval $update_comment_command"'""$message_header
+          $message""'"
 
       - name: "Remove tested label if author assigned it"
         if: env.author_manual_test
@@ -72,8 +112,7 @@ jobs:
       - name: "Add comment that tests were preformed"
         if: github.event.action == 'labeled' && github.event.label.name == 'tested'
         run: |
-          gh pr comment ${{ github.event.pull_request.number }} -R $GITHUB_REPOSITORY \
-          --edit-last \
-          -b '### Manual Tests
-
-          :green_heart: Manual testing by @${{ github.event.sender.login }} resulted in success.'
+          message=':green_heart: Manual testing by @${{ github.event.sender.login }} resulted in success.'
+          
+          eval $update_comment_command"'""$message_header
+          $message""'"

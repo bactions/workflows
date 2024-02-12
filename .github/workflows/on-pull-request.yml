@@ -65,9 +65,9 @@ jobs:
             echo "$update_comment_command"
           fi
           
-          echo "has_last_comment=\"$has_last_comment\"" >> $GITHUB_EN
-          echo "last_comment_id=\"$last_comment_id\"" >> $GITHUB_EN
-          echo "update_comment_command=\"$update_comment_command\"" >> $GITHUB_EN
+          echo "has_last_comment=\"$has_last_comment\"" >> $GITHUB_ENV
+          echo "last_comment_id=\"$last_comment_id\"" >> $GITHUB_ENV
+          echo "update_comment_command=\"$update_comment_command\"" >> $GITHUB_ENV
 
       - name: "Fail if tested label is not assigned"
         if: contains(github.event.pull_request.labels.*.name, 'tested') != true

@@ -57,7 +57,7 @@ jobs:
             #Currently there is no option to update comment by id in gh cli for we're adding a new comment
             echo "::debug::Last comment is not related to manual tests, will create new comment"
           else
-            echo "update_comment_command_flags=\"--edit-last\"" >> $GITHUB_ENV
+            echo "update_comment_command_flags=--edit-last" >> $GITHUB_ENV
           fi
           
           echo "has_last_comment=\"$has_last_comment\"" >> $GITHUB_ENV

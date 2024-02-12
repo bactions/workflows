@@ -74,7 +74,7 @@ jobs:
         run: |
           message=':information_source: Remember to ask team members to perform manual tests and to assign `tested` label after testing.'
           
-          eval $update_comment_command "$message_header
+          exec $update_comment_command "$message_header
           $message"
           
           echo "::error title=Waiting for manual tests to be performed.::Waiting for manual tests to be performed. Please add 'tested' label after testing."
@@ -94,7 +94,7 @@ jobs:
           message=':red_circle: Manual testing should not be performed by author.
           Ask other team member to perform a manual tests and to assign `tested` label after testing.'
           
-          eval $update_comment_command "$message_header
+          exec $update_comment_command "$message_header
           $message"
 
       - name: "Remove tested label if author assigned it"
@@ -114,5 +114,5 @@ jobs:
         run: |
           message=':green_heart: Manual testing by @${{ github.event.sender.login }} resulted in success.'
           
-          eval $update_comment_command "$message_header
+          exec $update_comment_command "$message_header
           $message"

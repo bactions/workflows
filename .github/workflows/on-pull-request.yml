@@ -52,31 +52,23 @@ jobs:
           last_comment_id_query=".comments | map(select(.author.login == \"$comment_author\" and (.body | startswith(\"$message_header\")))) | .[-1].id"
           last_comment_id=$(gh pr view $PR_NUMBER -R $GITHUB_REPOSITORY -c --json comments --jq "$last_comment_id_query")
           if [[ $has_last_comment == "false" &&  $last_comment_id == "" ]]; then
-            update_comment_command_flags=""
+            echo "::debug::There is no comment related to manual tests yet, will create new comment"
           elif [[ $has_last_comment == "false" &&  $last_comment_id != "" ]]; then
             #Currently there is no option to update comment by id in gh cli for we're adding a new comment
-            update_comment_command_flags=""
+            echo "::debug::Last comment is not related to manual tests, will create new comment"
           else
-            update_comment_command_flags="--edit-last"
-          fi
-          
-          if [[ $RUNNER_DEBUG != "" ]]; then
-            echo "additional flags for update comment"
-            echo "$update_comment_command_flags"
-            echo "has_last_comment=\"$has_last_comment\"" 
-            echo "last_comment_id=\"$last_comment_id\"" 
+            echo "update_comment_command_flags=\"--edit-last\"" >> $GITHUB_ENV
           fi
           
           echo "has_last_comment=\"$has_last_comment\"" >> $GITHUB_ENV
           echo "last_comment_id=\"$last_comment_id\"" >> $GITHUB_ENV
-          echo "update_comment_command_flags=\"$update_comment_command_flags\"" >> $GITHUB_ENV
 
       - name: "Fail if tested label is not assigned"
         if: contains(github.event.pull_request.labels.*.name, 'tested') != true
         run: |
           message=':information_source: Remember to ask team members to perform manual tests and to assign `tested` label after testing.'
           
-          gh pr comment $PR_NUMBER -R $GITHUB_REPOSITORY -b "$message_header
+          gh pr comment $PR_NUMBER -R $GITHUB_REPOSITORY $update_comment_command_flags -b "$message_header
           $message"
           
           echo "::error title=Waiting for manual tests to be performed.::Waiting for manual tests to be performed. Please add 'tested' label after testing."

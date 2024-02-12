@@ -16,15 +16,15 @@ env:
   PR_NUMBER: ${{ github.event.pull_request.number }}
 
 jobs:
-#  additional:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: "Put some comment"
-#        run: |
-#          gh pr comment $PR_NUMBER -R $GITHUB_REPOSITORY \
-#          -b "Welcome"
+  additional:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Put some comment"
+        run: |
+          gh pr comment $PR_NUMBER -R $GITHUB_REPOSITORY \
+          -b "Welcome"
   manual-test:
-#    needs: [additional]
+    needs: [additional]
     name: "Manual tests"
     if: inputs.require-manual-tests && contains(fromJSON('["labeled", "unlabeled", "opened"]'), github.event.action)
     continue-on-error: true

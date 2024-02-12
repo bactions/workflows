@@ -63,8 +63,8 @@ jobs:
           if [[ $RUNNER_DEBUG != "" ]]; then
             echo "additional flags for update comment"
             echo "$update_comment_command_flags"
-            echo "has_last_comment=\"$has_last_comment\"" >> $GITHUB_ENV
-            echo "last_comment_id=\"$last_comment_id\"" >> $GITHUB_ENV
+            echo "has_last_comment=\"$has_last_comment\"" 
+            echo "last_comment_id=\"$last_comment_id\"" 
           fi
           
           echo "has_last_comment=\"$has_last_comment\"" >> $GITHUB_ENV
@@ -76,7 +76,7 @@ jobs:
         run: |
           message=':information_source: Remember to ask team members to perform manual tests and to assign `tested` label after testing.'
           
-          gh pr comment $PR_NUMBER -R $GITHUB_REPOSITORY $update_comment_command_flags -b "$message_header
+          gh pr comment $PR_NUMBER -R $GITHUB_REPOSITORY -b "$message_header
           $message"
           
           echo "::error title=Waiting for manual tests to be performed.::Waiting for manual tests to be performed. Please add 'tested' label after testing."

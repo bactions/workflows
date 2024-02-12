@@ -16,15 +16,7 @@ env:
   PR_NUMBER: ${{ github.event.pull_request.number }}
 
 jobs:
-  additional:
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Put some comment"
-        run: |
-          gh pr comment $PR_NUMBER -R $GITHUB_REPOSITORY \
-          -b "Welcome"
   manual-test:
-    needs: [additional]
     name: "Manual tests"
     if: inputs.require-manual-tests && contains(fromJSON('["labeled", "unlabeled", "opened"]'), github.event.action)
     continue-on-error: true
@@ -94,7 +86,7 @@ jobs:
       - name: "Remove tested label if author assigned it"
         if: env.author_manual_test
         run: |
-          gh pr edit ${{ github.event.pull_request.number }} -R $GITHUB_REPOSITORY \
+          gh pr edit $PR_NUMBER -R $GITHUB_REPOSITORY \
           --remove-label tested
 
       - name: "Fail if author assigned label tested"

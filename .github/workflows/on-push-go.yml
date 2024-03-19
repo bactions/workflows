@@ -191,7 +191,7 @@ jobs:
 
       - name: Update code coverage
         if: ${{ env.CODECOV_TOKEN != '' }}
-        uses: codecov/codecov-action@v3.1.6
+        uses: codecov/codecov-action@v4.1.0
         with:
           token: ${{ env.CODECOV_TOKEN }}
           flags: unittests

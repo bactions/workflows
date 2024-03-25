@@ -11,8 +11,10 @@ on:
         type: string
         description: "Version of the app to release"
       os:
-        description: "Comma separated list of OS for which the binary should be built"
-        default: 'linux,darwin'
+        description: |
+          Comma separated list of OS for which the binary should be built.
+          For example: linux,darwin
+        default: 'linux'
         required: false
         type: string
       go-version:
@@ -37,7 +39,7 @@ on:
       release_binaries:
         required: false
         type: boolean
-        default: true
+        default: false
         description: "If the packages with binaries should be attached to release"
       docker_image:
         required: false

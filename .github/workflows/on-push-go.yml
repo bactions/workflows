@@ -32,6 +32,7 @@ env:
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   code-style:

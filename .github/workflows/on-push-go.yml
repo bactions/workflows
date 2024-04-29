@@ -134,7 +134,7 @@ jobs:
           go-version-file: ${{inputs.go-version-file}}
           cache: false
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v5
         with:
           version: latest
           skip-cache: false

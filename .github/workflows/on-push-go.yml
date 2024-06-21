@@ -132,14 +132,11 @@ jobs:
         with:
           go-version: ${{inputs.go-version}}
           go-version-file: ${{inputs.go-version-file}}
-          cache: false
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
-          skip-cache: false
-          skip-pkg-cache: false
-          skip-build-cache: false
+          args: --timeout=5m
 
   compile:
     name: Compile

@@ -263,7 +263,7 @@ jobs:
           echo "DOCKER_FILE=$dockerfile" >> $GITHUB_ENV
 
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ${{ env.DOCKER_FILE }}

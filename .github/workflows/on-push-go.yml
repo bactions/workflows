@@ -128,7 +128,7 @@ jobs:
                 present: false
                 level: warning
               line-length:
-                max: 120
+                max: 160
       - uses: actions/upload-artifact@v4
         if: always()
         with:

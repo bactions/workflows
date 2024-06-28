@@ -57,27 +57,6 @@ jobs:
             
             mode = lintFile ? mode : 'off';
             return { styleFile: styleConfig, mode, lintFile: lintFile };
-#      - name: Determine Configuration
-#        id: resolve
-#        run: |
-#          if [[ -f ".golangci-style.yml" ]]; then
-#            echo "::set-output name=lint_style_file::.golangci-style.yml"
-#            echo "::set-output name=lint_mode::split"
-#          else
-#            echo "::set-output name=lint_mode::unified"
-#          fi
-#
-#          if [[ -f ".golangci-lint.yml" ]]; then
-#            echo "::set-output name=lint_file::.golangci-lint.yml"
-#          else
-#            # Check for other lint files if .golangci-lint.yml doesn't exist
-#            for file in .golangci.yml .golangci.yaml .golangci.toml .golangci.json; do
-#              if [[ -f "$file" ]]; then
-#                echo "::set-output name=lint_file::$file"
-#                break
-#              fi
-#            done
-#          fi
   code-style:
     name: Code Style
     needs: [resolve-config]

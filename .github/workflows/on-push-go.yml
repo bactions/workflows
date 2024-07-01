@@ -35,8 +35,31 @@ permissions:
   pull-requests: read
 
 jobs:
+  resolve-config:
+    runs-on: ubuntu-latest
+    outputs:
+      lint_mode: ${{ fromJson(steps.lint.outputs.result).mode }}
+      lint_style_file: ${{ fromJson(steps.lint.outputs.result).styleFile }}
+      lint_file: ${{ fromJson(steps.lint.outputs.result).lintFile }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve linter configuration
+        uses: actions/github-script@v7
+        id: lint
+        with:
+          script: |
+            const fs = require('fs');
+            const styleConfig = '.golangci-style.yml';
+            let mode = fs.existsSync(styleConfig) ? 'split' : 'unified';
+            
+            const lintFile = ['.golangci-lint.yml', '.golangci.yml', '.golangci.yaml', '.golangci.toml', '.golangci.json']
+                  .find((file) => fs.existsSync(file));
+            
+            mode = lintFile ? mode : 'off';
+            return { styleFile: styleConfig, mode, lintFile: lintFile };
   code-style:
     name: Code Style
+    needs: [resolve-config]
     runs-on: ubuntu-latest
     outputs:
       updatedCode: ${{ steps.commit.outputs.pushed }}
@@ -84,7 +107,7 @@ jobs:
                 present: false
                 level: warning
               line-length:
-                max: 120
+                max: 160
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -107,8 +130,13 @@ jobs:
       # lint & fix code style
       ########################
 
-      # TODO: split golangci-lint configurations for code style and errors
-      # consider unexcluding config files in a yaml lint step (above)
+      - name: Style Lint
+        id: style-lint
+        if: ${{ always() && needs.resolve-config.outputs.lint_mode == 'split' }}
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --fix --config=./${{ needs.resolve-config.outputs.lint_style_file }} --timeout=5m
 
       ###################
       # Push changes
@@ -124,8 +152,8 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    needs: [code-style]
-    if: ${{ !cancelled() && needs.code-style.outputs.updatedCode != 'true' }}
+    needs: [code-style,resolve-config]
+    if: ${{ !cancelled() && needs.resolve-config.outputs.lint_mode != 'off' && needs.code-style.outputs.updatedCode != 'true' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -136,7 +164,7 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
-          args: --timeout=5m
+          args: --config=./${{ needs.resolve-config.outputs.lint_file }} --timeout=5m
 
   compile:
     name: Compile

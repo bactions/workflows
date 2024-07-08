@@ -36,6 +36,11 @@ on:
         type: boolean
         default: false
         description: "Should set the CGO_ENABLED env and the compilers"
+      release_create:
+        required: false
+        type: boolean
+        default: true
+        description: "If the release should be published"
       release_binaries:
         required: false
         type: boolean
@@ -139,12 +144,13 @@ jobs:
           go-version: ${{ inputs.go-version }}
           go-version-file: ${{ inputs.go-version-file }}
       - name: "Create release if there isn't"
+        if: inputs.release_create
         run: |
           GH_PAGER=cat gh release view ${{ inputs.version }} --json name \
           || gh release create ${{ inputs.version }} -t "Release ${{ inputs.version }}" --latest --draft -F dist/CHANGELOG.md 
 
       - name: Add binaries to release
-        if: inputs.release_binaries
+        if: inputs.release_create && inputs.release_binaries
         run: |
           gh release upload ${{ inputs.version }} \
           dist/*.tar.gz \
@@ -318,6 +324,7 @@ jobs:
     name: Publish Release
     runs-on: ubuntu-latest
     needs: [dockerize]
+    if: inputs.release_create
     steps:
       - uses: actions/checkout@v4
       - name: Publish
@@ -327,6 +334,8 @@ jobs:
   notify:
     name: "Notify"
     runs-on: ubuntu-latest
+    # TODO adjust notification message if the release is not created, but adopter want to have notification
+    if: inputs.release_create
     needs: [dockerize, publish-release]
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

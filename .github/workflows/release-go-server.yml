@@ -199,6 +199,9 @@ jobs:
           ref: ${{ needs.resolve-config.outputs.ref }}
           go-version: ${{ inputs.go-version }}
           go-version-file: ${{ inputs.go-version-file }}
+      - name: "Create empty CHANGELOG.md if there isn't"
+        run: |
+          [ -f dist/CHANGELOG.md ] || touch dist/CHANGELOG.md
       - name: "Create release if there isn't"
         if: inputs.release_create
         run: |
@@ -215,14 +218,11 @@ jobs:
 
   dockerize:
     name: Dockerize
-    needs: [build]
+    needs: [resolve-config, build]
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ env.VERSION }} #TODO
       image: ${{ env.DOCKER_IMAGE }}
-      image_encoded: ${{ env.DOCKER_IMAGE_ENCODED }}
       html: ${{ env.DOCKER_IMAGE_HTML }}
-      html_encoded: ${{ env.DOCKER_IMAGE_HTML_ENCODED }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -354,15 +354,8 @@ jobs:
       - name: Add additional variables to env
         run: |
           echo "DOCKER_IMAGE=${{ fromJSON(steps.resolve-docker.outputs.result).image }}" >> $GITHUB_ENV
-          echo "VERSION=${{ env.DOCKER_METADATA_OUTPUT_VERSION }}" >> $GITHUB_ENV
           echo "DOCKER_IMAGE_HTML=${{ fromJSON(steps.resolve-docker.outputs.result).dockerImageHtml }}" >> $GITHUB_ENV
 
-      ### Solve the issue when part of image name is resolved as secret.DOCKER_USERNAME
-      - name: Encoded outputs
-        id: encoded-outputs
-        run: |
-          echo "DOCKER_IMAGE_ENCODED=$(echo "$DOCKER_IMAGE" | base64 -w0 | base64 -w0 )" >> $GITHUB_ENV
-          echo "DOCKER_IMAGE_HTML_ENCODED=$(echo "$DOCKER_IMAGE_HTML" | base64 -w0 | base64 -w0 )" >> $GITHUB_ENV
       - name: Choose dockerhub readme file template
         if: success() && fromJSON(steps.resolve-docker.outputs.result).isDockerhub
         run: |
@@ -389,7 +382,7 @@ jobs:
   publish-release:
     name: Publish Release
     runs-on: ubuntu-latest
-    needs: [dockerize]
+    needs: [resolve-config, dockerize]
     if: inputs.release_create
     steps:
       - uses: actions/checkout@v4
@@ -402,7 +395,7 @@ jobs:
     runs-on: ubuntu-latest
     # TODO adjust notification message if the release is not created, but adopter want to have notification
     if: inputs.release_create
-    needs: [dockerize, publish-release]
+    needs: [resolve-config, dockerize, publish-release]
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       REPO_URL: ${{github.server_url}}/${{ github.repository }}
@@ -417,7 +410,7 @@ jobs:
         run: |
           echo "DOCKER_IMAGE=${{ needs.dockerize.outputs.image }}" >> $GITHUB_ENV
           echo "DOCKER_IMAGE_HTML=${{ needs.dockerize.outputs.html }}" >> $GITHUB_ENV
-          echo "DOCKER_IMAGE_VERSION=${{ needs.dockerize.outputs.version }}" >> $GITHUB_ENV
+          echo "DOCKER_IMAGE_VERSION=${{ needs.resolve-config.outputs.sanitizedVersion }}" >> $GITHUB_ENV
 
       # Sometime GH can treat image name and image url as containing secrets,
       # therefore if they're missing we need to resolve them again

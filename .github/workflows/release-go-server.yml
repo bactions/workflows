@@ -353,9 +353,9 @@ jobs:
           build-args: |
             project_name=${{ github.event.repository.name }}
             repository_owner=${{ github.repository_owner }}
-            tag=${{ github.ref_name }}
+            tag=${{ needs.resolve-config.outputs.ref }}
+            version=${{ needs.resolve-config.outputs.sanitizedVersion }}
             src_url=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.source'] }}
-            version=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
             revision=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
 
       - name: Add additional variables to env

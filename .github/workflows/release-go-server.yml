@@ -100,6 +100,13 @@ on:
         required: false
         description: 'Provide a Slack incoming webhook url, if you want to have a notification on the slack channel'
 
+    outputs:
+      imageVersion:
+        description: "Version of the docker image (which may be a sanitized version from inputs)"
+        value: ${{ jobs.resolve-config.outputs.version }}
+      imageName:
+        description: "Name of the docker image"
+        value: ${{ jobs.dockerize.outputs.image }}
 
 env:
   OS_MAPPING: |

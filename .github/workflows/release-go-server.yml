@@ -9,7 +9,17 @@ on:
       version:
         required: true
         type: string
-        description: "Version of the app to release"
+        description: |
+          Version of the app to release.
+          By default this value will be used also as a git reference to checkout.
+          If you want to release from a different branch or tag, you can provide it in the ref input.
+      ref:
+        required: false
+        type: string
+        description: |
+          Git reference to checkout the code and use it for release.
+          If not provided, the version will be used as a ref.
+          It can be either a branch name, tag name or commit SHA (long version).
       os:
         description: |
           Comma separated list of OS for which the binary should be built.
@@ -85,14 +95,14 @@ on:
         description: |
           Password used to authenticate in docker repository.
           If is not set, and registry is ghcr.io, then defaults to GitHub Token.
-          
+
       SLACK_WEBHOOK_URL:
         required: false
         description: 'Provide a Slack incoming webhook url, if you want to have a notification on the slack channel'
 
 
 env:
-  OS_MAPPING: | 
+  OS_MAPPING: |
     {
       'darwin': 'macos-latest',
       'linux': 'ubuntu-latest'
@@ -106,6 +116,11 @@ jobs:
     outputs:
       os: ${{ steps.os.outputs.result }}
       workflow: ${{ steps.workflow.outputs.result }}
+      ref: ${{ steps.git-ref.outputs.value }}
+      refType: ${{ steps.git-ref.outputs.type }}
+      refSha: ${{ steps.git-ref.outputs.sha }}
+      sanitizedVersion: ${{ steps.version.outputs.sanitized }}
+      version: ${{ steps.version.outputs.value }}
     steps:
       - id: os
         uses: actions/github-script@v7
@@ -127,6 +142,45 @@ jobs:
               repo_name: parts[1],
               file: parts.slice(2).join('/')
             }
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || inputs.version }}
+      - name: Resolve ref type
+        # Resolves the git reference value and type of it (tag, branch, sha)
+        id: git-ref
+        run: |
+          value="${{ inputs.ref || inputs.version }}"
+          echo "value=$value" > $GITHUB_OUTPUT
+          
+          type=$(git cat-file -t "$value")
+          if [[ "$type" == "tag" ]]; then
+            echo "type=tag" >> $GITHUB_OUTPUT
+          elif [[ "$type" == "commit" && "$(git branch --show-current)" == "$value" ]]; then
+            echo "type=branch" >> $GITHUB_OUTPUT
+          else
+            echo "type=sha" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "::group::Outputs"
+          cat $GITHUB_OUTPUT
+          echo "::endgroup::"
+
+      - name: Sanitize version
+        # Adjust version to meet docker tag requirements
+        id: version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ inputs.version }}';
+            sanitized = version.replace(/[^a-zA-Z0-9._-]+/g, '-')
+            sanitized = sanitized.substring(0, 128)
+            core.setOutput('value', version)
+            core.setOutput('sanitized', sanitized)
+            await core.group("Outputs", async () => {
+              core.info(`value: ${sanitized}`);
+            })
 
   build:
     name: Build binaries
@@ -141,19 +195,20 @@ jobs:
       - name: Build
         uses: bactions/build-go@version_support
         with:
-          version: ${{ inputs.version }}
+          version: ${{ needs.resolve-config.outputs.sanitizedVersion }}
+          ref: ${{ needs.resolve-config.outputs.ref }}
           go-version: ${{ inputs.go-version }}
           go-version-file: ${{ inputs.go-version-file }}
       - name: "Create release if there isn't"
         if: inputs.release_create
         run: |
-          GH_PAGER=cat gh release view ${{ inputs.version }} --json name \
-          || gh release create ${{ inputs.version }} -t "Release ${{ inputs.version }}" --latest --draft -F dist/CHANGELOG.md 
+          GH_PAGER=cat gh release view "${{ needs.resolve-config.outputs.version }}" --json name \
+          || gh release create "${{ needs.resolve-config.outputs.version }}" -t "Release ${{ needs.resolve-config.outputs.version }}" --latest --draft -F dist/CHANGELOG.md 
 
       - name: Add binaries to release
         if: inputs.release_create && inputs.release_binaries
         run: |
-          gh release upload ${{ inputs.version }} \
+          gh release upload "${{ needs.resolve-config.outputs.version }}" \
           dist/*.tar.gz \
           dist/*_checksums.txt \
           --clobber
@@ -163,7 +218,7 @@ jobs:
     needs: [build]
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ env.VERSION }}
+      version: ${{ env.VERSION }} #TODO
       image: ${{ env.DOCKER_IMAGE }}
       image_encoded: ${{ env.DOCKER_IMAGE_ENCODED }}
       html: ${{ env.DOCKER_IMAGE_HTML }}
@@ -171,6 +226,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve-config.outputs.ref }}
       - name: "Prepare dist directory"
         run: |
           mkdir -p dist/linux/amd64
@@ -240,15 +297,23 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
+          # [sha-issue] There is an issue with metadata-action when we checkout sha and use git context
+          # Because of [sha-issue] we're choosing the context
+          context: ${{ needs.resolve-config.outputs.refType != 'sha' && 'git' || 'workflow' }}
           images: ${{ fromJSON(steps.resolve-docker.outputs.result).image }}
+          # Because of [sha-issue] we're setting short sha by ourselves
           tags: |
-            type=semver,pattern=v{{version}}
-            type=semver,pattern=v{{major}}.{{minor}}
-            type=semver,pattern=v{{major}}
-            type=semver,pattern={{raw}}
+            type=raw,value=latest,enable=${{ needs.resolve-config.outputs.refType == 'tag' }}
+            type=raw,value=${{ needs.resolve-config.outputs.sanitizedVersion }}
+            type=semver,prefix=v,pattern={{version}},enable=${{ needs.resolve-config.outputs.refType != 'sha' }}
+            type=semver,prefix=v,pattern={{major}}.{{minor}},enable=${{ needs.resolve-config.outputs.refType != 'sha' }}
+            type=semver,prefix=v,pattern={{major}},enable=${{ needs.resolve-config.outputs.refType != 'sha' }}
+            type=semver,pattern={{raw}},enable=${{ needs.resolve-config.outputs.refType != 'sha' }}
+            type=raw,prefix=sha-,value=${{ needs.resolve-config.outputs.refSha }}
           labels: |
-            ${{ fromJSON(steps.resolve-docker.outputs.result).isDockerhub && format('org.opencontainers.image.url="https://hub.docker.com/r/{0}"', fromJSON(steps.resolve-docker.outputs.result).image) }}
-          flavor: latest=true
+            ${{ fromJSON(steps.resolve-docker.outputs.result).isDockerhub && format('org.opencontainers.image.url=https://hub.docker.com/r/{0}', fromJSON(steps.resolve-docker.outputs.result).image) }}
+            ${{ needs.resolve-config.outputs.refType == 'sha' && format('org.opencontainers.image.revision={0}', needs.resolve-config.outputs.ref) }}
+
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -330,7 +395,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Publish
         run: |
-          gh release edit ${{ inputs.version }} --draft=false --repo ${{ github.repository }}
+          gh release edit "${{ needs.resolve-config.outputs.version }}" --draft=false --repo ${{ github.repository }}
 
   notify:
     name: "Notify"
@@ -341,7 +406,7 @@ jobs:
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       REPO_URL: ${{github.server_url}}/${{ github.repository }}
-      RELEASE_URL: ${{github.server_url}}/${{ github.repository }}/releases/tag/${{ inputs.version }}
+      RELEASE_URL: ${{github.server_url}}/${{ github.repository }}/releases/tag/${{ needs.resolve-config.outputs.version }}
     steps:
       - name: "Slack notification is skipped because secret SLACK_WEBHOOK_URL is not set"
         if: ${{ env.SLACK_WEBHOOK_URL == '' }}
@@ -417,7 +482,7 @@ jobs:
                   "block_id": "release",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*${{ github.event.repository.name || github.repository }}* <${{ env.RELEASE_URL }}|${{ inputs.version }}> is out! :rocket:"
+                    "text": "*${{ github.event.repository.name || github.repository }}* <${{ env.RELEASE_URL }}|${{ needs.resolve-config.outputs.version }}> is out! :rocket:"
                   }
                 },
                 {

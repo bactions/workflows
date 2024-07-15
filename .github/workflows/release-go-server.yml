@@ -280,7 +280,7 @@ jobs:
             }
             const isDockerhub = registry === 'dockerhub'
             const isGhcr = registry === 'ghcr.io'
-            const username = '${{ secrets.DOCKER_USERNAME || github.repository_owner }}'
+            const username = '${{ secrets.DOCKER_USERNAME || inputs.docker_org || vars.DOCKER_ORG || github.repository_owner }}'
             const password = '${{ secrets.DOCKER_PASSWORD }}'
             const ghToken = '${{ github.token }}'
             let dockerImageHtml=''
@@ -444,7 +444,7 @@ jobs:
             }
             const isDockerhub = registry === 'dockerhub'
             const isGhcr = registry === 'ghcr.io'
-            const username = '${{ secrets.DOCKER_USERNAME || github.repository_owner }}'
+            const username = '${{ secrets.DOCKER_USERNAME || inputs.docker_org || vars.DOCKER_ORG || github.repository_owner }}'
             const password = '${{ secrets.DOCKER_PASSWORD }}'
             const ghToken = '${{ github.token }}'
             let dockerImageHtml=''

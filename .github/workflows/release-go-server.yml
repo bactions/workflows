@@ -200,7 +200,7 @@ jobs:
       CGO_ENABLED: ${{ inputs.cgo_enabled && '1' || '0' }}
     steps:
       - name: Build
-        uses: bactions/build-go@version_support
+        uses: bactions/build-go@main
         with:
           version: ${{ needs.resolve-config.outputs.sanitizedVersion }}
           ref: ${{ needs.resolve-config.outputs.ref }}

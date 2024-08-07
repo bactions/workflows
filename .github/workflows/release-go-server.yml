@@ -160,15 +160,21 @@ jobs:
           value="${{ inputs.ref || inputs.version }}"
           echo "value=$value" > $GITHUB_OUTPUT
           
+          echo "::group::Type resolution"
           type=$(git cat-file -t "$value")
+          echo "type=$type"
           if [[ "$type" == "tag" ]]; then
+            echo "type=tag"
             echo "type=tag" >> $GITHUB_OUTPUT
           elif [[ "$type" == "commit" && "$(git branch --show-current)" == "$value" ]]; then
+            echo "type=branch"
             echo "type=branch" >> $GITHUB_OUTPUT
           else
+            echo "type is not tag nor branch, we assume it's a sha"
             echo "type=sha" >> $GITHUB_OUTPUT
           fi
           
+          echo "::endgroup::"
           echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "::group::Outputs"
           cat $GITHUB_OUTPUT

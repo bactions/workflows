@@ -149,6 +149,11 @@ jobs:
               repo_name: parts[1],
               file: parts.slice(2).join('/')
             }
+
+      - name: Debug ref
+        run: |
+          echo "ref: ${{ inputs.ref || inputs.version }}"
+
       - name: Checkout
         uses: actions/checkout@v4
         with:

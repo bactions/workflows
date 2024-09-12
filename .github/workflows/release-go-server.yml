@@ -261,16 +261,16 @@ jobs:
           path: dist/bin
       - name: Unpack packages
         run: |
-          [ -f ./dist/bin/*_Linux_arm64.tar.gz ] \
-          && tar -xvzf dist/bin/*_Linux_arm64.tar.gz -C dist/linux/arm64 \
+          [ -f ./dist/bin/*_linux_arm64.tar.gz ] \
+          && tar -xvzf dist/bin/*_linux_arm64.tar.gz -C dist/linux/arm64 \
           || echo "archive arm64 not found" 
           
-          [ -f ./dist/bin/*_Linux_x86_64.tar.gz ] \
-          && tar -xvzf dist/bin/*_Linux_x86_64.tar.gz -C dist/linux/amd64 \
+          [ -f ./dist/bin/*_linux_x86_64.tar.gz ] \
+          && tar -xvzf dist/bin/*_linux_x86_64.tar.gz -C dist/linux/amd64 \
           || echo "archive x86_64 not found" 
 
-          [ -f ./dist/bin/*_Linux_amd64.tar.gz ] \
-          && tar -xvzf dist/bin/*_Linux_amd64.tar.gz -C dist/linux/amd64 \
+          [ -f ./dist/bin/*_linux_amd64.tar.gz ] \
+          && tar -xvzf dist/bin/*_linux_amd64.tar.gz -C dist/linux/amd64 \
           || echo "archive amd64 not found" 
 
       - name: Resolve docker configuration

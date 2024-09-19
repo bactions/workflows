@@ -100,6 +100,7 @@ jobs:
             ignore:
               - swagger.yaml
               - .golangci.yml
+              - .git/*
             rules:
               truthy:
                 check-keys: false

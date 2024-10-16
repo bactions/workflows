@@ -171,11 +171,11 @@ jobs:
           elif [[ "$type" == "commit" && "$(git branch --show-current)" == "$value" ]]; then
             echo "type=branch"
             echo "type=branch" >> $GITHUB_OUTPUT
-         elif [[ "$type" == "commit" && "$(git rev-parse --verify -q "$value")" != "" ]]; then
+          elif [[ "$type" == "commit" && "$(git rev-parse --verify -q "$value")" != "" ]]; then
             echo "not annotated tag was used"
             echo "type=tag"
             echo "type=tag" >> $GITHUB_OUTPUT
-         else
+          else
             echo "type is not tag nor branch, we assume it's a sha"
             echo "type=sha" >> $GITHUB_OUTPUT
           fi

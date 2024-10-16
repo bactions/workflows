@@ -218,6 +218,8 @@ jobs:
           ref: ${{ needs.resolve-config.outputs.ref }}
           go-version: ${{ inputs.go-version }}
           go-version-file: ${{ inputs.go-version-file }}
+        env:
+          GORELEASER_PREVIOUS_TAG: ${{ needs.resolve-config.outputs.refType != 'tag' && 'v0.1.0' || '' }}
       - name: "Create empty CHANGELOG.md if there isn't"
         run: |
           [ -f dist/CHANGELOG.md ] || touch dist/CHANGELOG.md

@@ -193,7 +193,7 @@ jobs:
           
           echo "confirmed type=$ref_type"
           echo "::endgroup::"
-          if "$ref_type" == "unknown"; then
+          if [ "$ref_type" == "unknown" ]; then
             echo "Cannot determine the type of ref: $value"
             exit 1
           fi

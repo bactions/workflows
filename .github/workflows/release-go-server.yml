@@ -125,6 +125,7 @@ jobs:
     outputs:
       os: ${{ steps.os.outputs.result }}
       workflow: ${{ steps.workflow.outputs.result }}
+      workflowRunId: ${{ steps.workflow-run-id.outputs.workflowRunId }}
       ref: ${{ steps.git-ref.outputs.value }}
       refType: ${{ steps.git-ref.outputs.type }}
       refSha: ${{ steps.git-ref.outputs.sha }}
@@ -139,6 +140,14 @@ jobs:
             const osToImage = ${{ env.OS_MAPPING }}
             
             return systems.split(',').map(os => osToImage[os]);
+      - name: Generate reusable workflow run id
+        id: workflow-run-id
+        run: |
+          workflowRunId="${{ github.run_id }}-${{ github.run_number }}-$RANDOM"
+          echo "workflowRunId=$workflowRunId" >> $GITHUB_OUTPUT
+          echo "::group::Outputs"
+          cat $GITHUB_OUTPUT
+          echo "::endgroup::"
       - id: workflow
         uses: actions/github-script@v7
         with:
@@ -236,6 +245,7 @@ jobs:
           ref: ${{ needs.resolve-config.outputs.ref }}
           go-version: ${{ inputs.go-version }}
           go-version-file: ${{ inputs.go-version-file }}
+          artifacts-suffix: ${{ needs.resolve-config.outputs.workflowRunId }}
         env:
           GORELEASER_PREVIOUS_TAG: ${{ needs.resolve-config.outputs.refType != 'tag' && 'v0.1.0' || '' }}
           GORELEASER_CURRENT_TAG: ${{ needs.resolve-config.outputs.refType != 'tag' && 'v0.1.0' || '' }}
@@ -275,7 +285,7 @@ jobs:
       - name: Download
         uses: actions/download-artifact@v4
         with:
-          name: bin-linux
+          name: bin-linux-${{ needs.resolve-config.outputs.workflowRunId }}
           path: dist/bin
       - name: Unpack packages
         run: |

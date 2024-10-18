@@ -133,6 +133,7 @@ jobs:
       version: ${{ steps.version.outputs.value }}
     steps:
       - id: os
+        name: Resolve OS
         uses: actions/github-script@v7
         with:
           script: |
@@ -149,6 +150,7 @@ jobs:
           cat $GITHUB_OUTPUT
           echo "::endgroup::"
       - id: workflow
+        name: Resolve workflow config
         uses: actions/github-script@v7
         with:
           script: |

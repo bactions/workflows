@@ -101,6 +101,7 @@ jobs:
               - swagger.yaml
               - .golangci.yml
               - .git/*
+              - helm/*
             rules:
               truthy:
                 check-keys: false

@@ -219,7 +219,7 @@ jobs:
 
       - name: Update code coverage
         if: ${{ env.CODECOV_TOKEN != '' }}
-        uses: codecov/codecov-action@v4.6.0
+        uses: codecov/codecov-action@v5.0.7
         with:
           token: ${{ env.CODECOV_TOKEN }}
           flags: unittests
@@ -265,7 +265,7 @@ jobs:
 
       - name: "Notify success"
         if: ${{ steps.failed-checks.outputs.result == '' && env.SLACK_WEBHOOK_URL != '' }}
-        uses: slackapi/slack-github-action@v1
+        uses: slackapi/slack-github-action@v2
         with:
           payload: |
             {
@@ -301,7 +301,7 @@ jobs:
 
       - name: "Notify failure"
         if: ${{ steps.failed-checks.outputs.result != '' && env.SLACK_WEBHOOK_URL != '' }}
-        uses: slackapi/slack-github-action@v1
+        uses: slackapi/slack-github-action@v2
         with:
           payload: |
             {

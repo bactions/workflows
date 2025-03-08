@@ -66,7 +66,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ssh-key: ${{ secrets.deploy_key }}
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
 
       ################################################
       # Prepare programming language environment
@@ -230,7 +230,7 @@ jobs:
           fail_ci_if_error: false
           verbose: true
         env:
-          CODECOV_TOKEN: ${{ secrets.codecov_token }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   notify:
     name: "Notify"

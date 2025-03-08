@@ -80,7 +80,8 @@ jobs:
       # generate - run generation of go files if needed
       ############################################################
 
-      # TODO: choose a common way to do that
+      - name: Run Go generate
+        run: go generate ./...
 
       ############
       # go mod

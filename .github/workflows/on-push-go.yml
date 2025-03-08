@@ -76,18 +76,18 @@ jobs:
           go-version: ${{inputs.go-version}}
           go-version-file: ${{inputs.go-version-file}}
 
+      ############
+      # go mod
+      ############
+      - name: Go Module tidy
+        run: go mod tidy
+
       ############################################################
       # generate - run generation of go files if needed
       ############################################################
 
       - name: Run Go generate
         run: go generate ./...
-
-      ############
-      # go mod
-      ############
-      - name: Go Module tidy
-        run: go mod tidy
 
       ############
       # YAML lint

@@ -20,6 +20,11 @@ jobs:
           fetch-depth: 0
           ssh-key: ${{ secrets.deploy_key }}
 
+      - name: Set up Git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions"
+
       - name: Create version tag
         run: |
           minorChangesTypes='feat|perf|refactor|revert'

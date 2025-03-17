@@ -30,7 +30,7 @@ jobs:
       - name: "Create release if there isn't"
         run: |
           GH_PAGER=cat gh release view ${{ inputs.version }} --json name \
-          || gh release create ${{ inputs.version }} -t "Release ${{ inputs.version }}" --draft --repo ${{ github.repository }}
+          || gh release create ${{ inputs.version }} -t "Release ${{ inputs.version }}" --draft --generate-notes --repo ${{ github.repository }}
 
       - name: Publish
         run: |

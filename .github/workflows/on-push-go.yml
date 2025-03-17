@@ -15,15 +15,15 @@ on:
         description: "Accepts a path to a go.mod file or a go.work file that contains the version of Go. Default: 'go.mod'"
 
     secrets:
-      deploy_key:
+      DEPLOY_KEY:
         required: true
         description: 'Create a Deploy Key and pass a private key here, so the push of the tag will trigger the builds, based on it.'
 
-      codecov_token:
+      CODECOV_TOKEN:
         required: false
         description: 'Provide a codecov.io token, if you want to pass a coverage report to it.'
 
-      slack_webhook_url:
+      SLACK_WEBHOOK_URL:
         required: false
         description: 'Provide a Slack incoming webhook url, if you want to have a notification on the slack channel'
 
@@ -66,7 +66,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ssh-key: ${{ secrets.deploy_key }}
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
 
       ################################################
       # Prepare programming language environment
@@ -76,17 +76,18 @@ jobs:
           go-version: ${{inputs.go-version}}
           go-version-file: ${{inputs.go-version-file}}
 
-      ############################################################
-      # generate - run generation of go files if needed
-      ############################################################
-
-      # TODO: choose a common way to do that
-
       ############
       # go mod
       ############
       - name: Go Module tidy
         run: go mod tidy
+
+      ############################################################
+      # generate - run generation of go files if needed
+      ############################################################
+
+      - name: Run Go generate
+        run: go generate ./...
 
       ############
       # YAML lint
@@ -229,7 +230,7 @@ jobs:
           fail_ci_if_error: false
           verbose: true
         env:
-          CODECOV_TOKEN: ${{ secrets.codecov_token }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   notify:
     name: "Notify"

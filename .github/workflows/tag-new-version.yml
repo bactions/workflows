@@ -3,7 +3,7 @@ name: 'Tag new version'
 on:
   workflow_call:
     secrets:
-      deploy_key:
+      DEPLOY_KEY:
         required: true
         description: 'Create a Deploy Key and pass a private key here, so the push of the tag will trigger the builds, based on it.'
 
@@ -20,22 +20,48 @@ jobs:
           fetch-depth: 0
           ssh-key: ${{ secrets.deploy_key }}
 
-      - name: Conventional Changelog Action
-        id: tag-changelog
-        uses: TriPSs/conventional-changelog-action@v6
-        with:
-          github-token: ''
-          git-user-name: 'Release Action'
-          git-user-email: 'release-action@github.actions.com'
-          preset: 'conventionalcommits'
-          skip-git-pull: 'true'
-          output-file: 'false'
-          skip-version-file: 'true'
-          skip-commit: 'true'
-
-      - name: Prepare draft of release
-        if: steps.tag-changelog.outputs.skipped != 'true'
+      - name: Create version tag
         run: |
-          gh release create ${{ steps.tag-changelog.outputs.tag }} --draft -n "${{ steps.tag-changelog.outputs.clean_changelog }}" -t "Release ${{ steps.tag-changelog.outputs.tag }}"
-        env:
-          GH_TOKEN: ${{ github.token }}
+          patchChangesTypes='fix|build|chore|docs|ci|refactor|test'
+          
+          function latestVersion() {
+            git describe --tags --match 'v*' --abbrev=0
+          }
+            
+          function aheadLatestVersion() {
+            git describe --tags --match 'v*' --long | cut -d '-' -f2
+          }
+          
+          function isPatch() {
+            git --no-pager  log --pretty="format:%s" HEAD..."$1" | grep -cE "^($patchChangesTypes){1}(\([[:alnum:]._-]+\))?(!)?:.*"
+          }
+          
+          ## ensure we have tags
+          git fetch --force --tags
+          {
+            rawVersion=$(latestVersion)
+          } || {
+            git tag v0.0.0
+            echo "New version v0.0.0 tag created"
+            exit
+          }
+          version=${rawVersion:1}
+          patch=$(echo "$version" | cut -d '.' -f3)
+          minor=$(echo "$version" | cut -d '.' -f2)
+          major=$(echo "$version" | cut -d '.' -f1)
+            
+          if (($(aheadLatestVersion) == 0)); then
+            echo "Already at the latest version tag, not doing anything"
+            exit 0
+          fi
+            
+          if (($(isPatch "$rawVersion") > 0)); then
+            nextVersion="v$major.$minor.$((patch+1))"
+          else
+            nextVersion="v$major.$((minor+1)).0"
+          fi
+          
+          git tag "$nextVersion"
+
+      - name: Push new tag
+        run: git push --tags

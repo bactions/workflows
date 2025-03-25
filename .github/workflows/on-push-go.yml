@@ -136,7 +136,7 @@ jobs:
       - name: Style Lint
         id: style-lint
         if: ${{ always() && needs.resolve-config.outputs.lint_mode == 'split' }}
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
           version: latest
           args: --fix --config=./${{ needs.resolve-config.outputs.lint_style_file }} --timeout=5m
@@ -164,7 +164,7 @@ jobs:
           go-version: ${{inputs.go-version}}
           go-version-file: ${{inputs.go-version-file}}
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
           version: latest
           args: --config=./${{ needs.resolve-config.outputs.lint_file }} --timeout=5m

@@ -56,6 +56,10 @@ on:
         type: boolean
         default: false
         description: "If the packages with binaries should be attached to release"
+      release_goreleaser_config:
+        required: false
+        type: string
+        description: "Path to goreleaser custom config file"
       docker_image:
         required: false
         type: string
@@ -102,6 +106,10 @@ on:
         required: false
         description: 'Provide a Slack incoming webhook url, if you want to have a notification on the slack channel'
 
+      GH_PAT:
+        required: false
+        description: 'Provide a Personal Access Token to authenticate and access private repositories or perform actions requiring additional permissions'
+
     outputs:
       imageVersion:
         description: "Version of the docker image (which may be a sanitized version from inputs)"
@@ -118,6 +126,7 @@ env:
     }
   GH_TOKEN: ${{ github.token }}
   MAIN_FILE: ${{ inputs.go_main_file }}
+  GH_PAT: ${{ secrets.GH_PAT }}
 
 jobs:
   resolve-config:
@@ -248,6 +257,7 @@ jobs:
           go-version: ${{ inputs.go-version }}
           go-version-file: ${{ inputs.go-version-file }}
           artifacts-suffix: ${{ needs.resolve-config.outputs.workflowRunId }}
+          goreleaser-config: ${{ inputs.release_goreleaser_config }}
         env:
           GORELEASER_PREVIOUS_TAG: ${{ needs.resolve-config.outputs.refType != 'tag' && 'v0.1.0' || '' }}
           GORELEASER_CURRENT_TAG: ${{ needs.resolve-config.outputs.refType != 'tag' && 'v0.1.0' || '' }}

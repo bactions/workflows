@@ -250,7 +250,7 @@ jobs:
       CGO_ENABLED: ${{ inputs.cgo_enabled && '1' || '0' }}
     steps:
       - name: Build
-        uses: bactions/build-go@feat/use-custom-release-config
+        uses: bactions/build-go@tmp/use-custom-release-config
         with:
           version: ${{ needs.resolve-config.outputs.sanitizedVersion }}
           ref: ${{ needs.resolve-config.outputs.ref }}

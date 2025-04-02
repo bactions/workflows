@@ -14,6 +14,13 @@ on:
         default: 'go.mod'
         description: "Accepts a path to a go.mod file or a go.work file that contains the version of Go. Default: 'go.mod'"
 
+      go-generate-extra-tools:
+        required: false
+        type: string
+        default: ''
+        description: |
+          Comma separated list of extra tools to install before running go generate.
+          Currently supports only 'node'.
     secrets:
       DEPLOY_KEY:
         required: true
@@ -41,6 +48,7 @@ jobs:
       lint_mode: ${{ fromJson(steps.lint.outputs.result).mode }}
       lint_style_file: ${{ fromJson(steps.lint.outputs.result).styleFile }}
       lint_file: ${{ fromJson(steps.lint.outputs.result).lintFile }}
+      tools: ${{ steps.extra-tools.outputs.result }}
     steps:
       - uses: actions/checkout@v4
       - name: Resolve linter configuration
@@ -57,6 +65,14 @@ jobs:
             
             mode = lintFile ? mode : 'off';
             return { styleFile: styleConfig, mode, lintFile: lintFile };
+      - name: Resolve go generate extra tools
+        id: extra-tools
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tools = '${{ inputs.go-generate-extra-tools }}';
+            return tools.split(',');
+
   code-style:
     name: Code Style
     needs: [resolve-config]
@@ -75,6 +91,17 @@ jobs:
         with:
           go-version: ${{inputs.go-version}}
           go-version-file: ${{inputs.go-version-file}}
+
+      ################################################
+      # Prepare additional tools for go generate
+      ################################################
+      - name: '[optional] setup node for go generate'
+        if: ${{ contains(fromJSON(needs.resolve-config.outputs.tools), 'node') }}
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'package.json'
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
 
       ############
       # go mod

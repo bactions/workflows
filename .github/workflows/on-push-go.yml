@@ -249,7 +249,7 @@ jobs:
       - name: Matching PR
         id: matching-pr
         run: |
-          GH_PAGER=cat gh pr list -H ${{ github.ref_name }} --json url,number,title \
+          GH_PAGER=cat gh pr list -H '${{ github.ref_name }}' --json url,number,title \
           -q '.[0] | @text "msg=<\(.url//"${{ env.REPO_URL }}/pulls")|\(.title//"Not Found, check the list here.")>"' \
           >> $GITHUB_OUTPUT
         env:

@@ -163,7 +163,7 @@ jobs:
               file: parts.slice(2).join('/')
             }
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref || inputs.version }}
       - name: Resolve ref type
@@ -277,7 +277,7 @@ jobs:
       html: ${{ env.DOCKER_IMAGE_HTML }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ needs.resolve-config.outputs.ref }}
       - name: "Prepare dist directory"
@@ -455,7 +455,7 @@ jobs:
     needs: [resolve-config, dockerize]
     if: inputs.release_create
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Publish
         run: |
           gh release edit "${{ needs.resolve-config.outputs.version }}" --draft=false --repo ${{ github.repository }}

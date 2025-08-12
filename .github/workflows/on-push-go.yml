@@ -42,7 +42,7 @@ jobs:
       lint_style_file: ${{ fromJson(steps.lint.outputs.result).styleFile }}
       lint_file: ${{ fromJson(steps.lint.outputs.result).lintFile }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Resolve linter configuration
         uses: actions/github-script@v7
         id: lint
@@ -64,7 +64,7 @@ jobs:
     outputs:
       updatedCode: ${{ steps.commit.outputs.pushed }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ssh-key: ${{ secrets.DEPLOY_KEY }}
 
@@ -158,7 +158,7 @@ jobs:
     needs: [code-style,resolve-config]
     if: ${{ !cancelled() && needs.resolve-config.outputs.lint_mode != 'off' && needs.code-style.outputs.updatedCode != 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with:
           go-version: ${{inputs.go-version}}
@@ -175,7 +175,7 @@ jobs:
     needs: [code-style]
     if: ${{ !cancelled() && needs.code-style.outputs.updatedCode != 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with:
           go-version: ${{inputs.go-version}}
@@ -191,7 +191,7 @@ jobs:
     needs: [code-style]
     if: ${{ !cancelled() && needs.code-style.outputs.updatedCode != 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with:
           go-version: ${{inputs.go-version}}
@@ -245,7 +245,7 @@ jobs:
         if: ${{ env.SLACK_WEBHOOK_URL == '' }}
         run: echo "::notice::Slack notification is skipped because secret SLACK_WEBHOOK_URL is not set"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Matching PR
         id: matching-pr
         run: |

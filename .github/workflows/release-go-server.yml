@@ -377,7 +377,7 @@ jobs:
 
       - name: AWS ECR CREDENTIALS
         if: fromJSON(steps.resolve-docker.outputs.result).isAwsPublicEcr
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-access-key-id: ${{ fromJSON(steps.resolve-docker.outputs.result).username }}
           aws-secret-access-key: ${{ fromJSON(steps.resolve-docker.outputs.result).password }}

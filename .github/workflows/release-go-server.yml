@@ -134,7 +134,7 @@ jobs:
     steps:
       - id: os
         name: Resolve OS
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const systems = '${{ inputs.os }}'
@@ -151,7 +151,7 @@ jobs:
           echo "::endgroup::"
       - id: workflow
         name: Resolve workflow config
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const workflowRef = '${{github.workflow_ref}}'
@@ -218,7 +218,7 @@ jobs:
       - name: Sanitize version
         # Adjust version to meet docker tag requirements
         id: version
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const version = '${{ inputs.version }}';
@@ -305,7 +305,7 @@ jobs:
 
       - name: Resolve docker configuration
         id: resolve-docker
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             let image = '${{ inputs.docker_image }}'
@@ -486,7 +486,7 @@ jobs:
       # therefore if they're missing we need to resolve them again
       - name: Resolve docker configuration
         id: resolve-docker
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         if: env.SLACK_WEBHOOK_URL != '' && (env.DOCKER_IMAGE == '' || env.DOCKER_IMAGE_HTML == '')
         with:
           script: |

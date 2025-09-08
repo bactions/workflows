@@ -71,7 +71,7 @@ jobs:
       ################################################
       # Prepare programming language environment
       ################################################
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{inputs.go-version}}
           go-version-file: ${{inputs.go-version-file}}
@@ -159,7 +159,7 @@ jobs:
     if: ${{ !cancelled() && needs.resolve-config.outputs.lint_mode != 'off' && needs.code-style.outputs.updatedCode != 'true' }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{inputs.go-version}}
           go-version-file: ${{inputs.go-version-file}}
@@ -176,7 +176,7 @@ jobs:
     if: ${{ !cancelled() && needs.code-style.outputs.updatedCode != 'true' }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{inputs.go-version}}
           go-version-file: ${{inputs.go-version-file}}
@@ -192,7 +192,7 @@ jobs:
     if: ${{ !cancelled() && needs.code-style.outputs.updatedCode != 'true' }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{inputs.go-version}}
           go-version-file: ${{inputs.go-version-file}}
